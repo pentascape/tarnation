@@ -32,7 +32,7 @@ describe('Repository.getItem', function () {
     const tableName = faker.lorem.word();
     const repository = new Repository({client: ddbClient, table: tableName});
 
-    const consoleWarnSpy = sinon.spy(console, 'warn');
+    const consoleWarnSpy = sinon.stub(console, 'warn');
     const getItemStub = sinon.stub(ddbClient, 'getItem');
     getItemStub.returns({
       promise: () => Promise.resolve({
@@ -68,8 +68,6 @@ describe('Repository.getItem', function () {
     return repository.getItem({})
       .then(item => {
         assert.instanceOf(item, Object);
-
-        // console.log(item.hasMigrations());
       });
   });
 });

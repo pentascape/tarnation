@@ -8,7 +8,7 @@ class Repository {
     this.validateProperties(props);
     this.client = props.client;
     this.table = props.table;
-    this.versions = [];
+    this.migrations = [];
   }
 
   validateProperties(props) {
@@ -17,18 +17,17 @@ class Repository {
     }
   }
 
-  addVersion(version) {
-    this.versions.push(version);
+  addVersion(migration) {
+    this.migrations.push(migration);
   }
 
   afterLoad(item) {
-    console.log(item);
     if ( !item.hasOwnProperty('$schema') || typeof item.$schema !== 'string' || item.$schema === '' ) {
       console.warn('No schema detected for object');
     }
 
-    const currentVersionIndex = this.versions.findIndex(version => version.$id === item.$schema);
-    const newVersions = this.versions.slice(currentVersionIndex);
+    const currentVersionIndex = this.migrations.findIndex(migration => migration.schema.$id === item.$schema);
+    const newVersions = this.migrations.slice(currentVersionIndex);
     if ( newVersions.length <= 0 ) {
       const proxyHandler = new Item();
       return new Proxy(item, proxyHandler);
@@ -87,11 +86,21 @@ class Repository {
 class Item {
   constructor(props) {
     if ( props === undefined ) {
-      this.migrations = [];
+      this.versions = [];
+    } else {
+      this.versions = props.versions || [];
     }
   }
 
   get(oTarget, sKey) {
+    if ( typeof this[sKey] === 'function' ) {
+      return this[sKey].bind(this);
+    }
+
+    if ( typeof oTarget[sKey] === 'function' ) {
+      return oTarget[sKey].bind(oTarget);
+    }
+
     return oTarget[sKey] || undefined;
   }
 
@@ -99,12 +108,12 @@ class Item {
     console.log('arguments', arguments);
   }
 
-  hasMigrations() {
-    return this.migrations.length > 0;
+  hasVersions() {
+    return this.versions.length > 0;
   }
 
   migrate() {
-    if ( !this.hasMigrations() ) {
+    if ( !this.hasVersions() ) {
       return;
     }
   }
@@ -112,12 +121,24 @@ class Item {
 
 
 class Version {
-  constructor(schema) {
-    this.schema = schema;
+  constructor() {
+    if ( this.constructor.name === 'Version' ) {
+      throw new Error('Version cannot be instantiated, it must be extended!');
+    }
+
+    if ( typeof this.up !== 'function' ) {
+      throw new Error('Method `up` is not defined');
+    }
+
+    if ( typeof this.schema !== 'function' ) {
+      throw new Error('Method `schema` is not defined')
+    }
   }
 }
+
 
 module.exports = {
   Repository: Repository,
   Item: Item,
+  Version: Version,
 };
