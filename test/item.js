@@ -41,7 +41,7 @@ describe('Item.upgrade', function () {
       schema() { return {$id: 'foo-v1.json'}; }
       up(item) {
         const {first_name, last_name, ...newItem} = item;
-        return Object.assign(newItem, { name: {first: first_name, last: last_name} });
+        return { name: {first: first_name, last: last_name}, ...newItem};
       }
     });
     const v2 = new (class V2 extends Version {
