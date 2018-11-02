@@ -8,7 +8,7 @@ class Repository {
     this.validateProperties(props);
     this.client = props.client;
     this.table = props.table;
-    this.migrations = [];
+    this.versions = props.versions || [];
   }
 
   validateProperties(props) {
@@ -17,8 +17,8 @@ class Repository {
     }
   }
 
-  addVersion(migration) {
-    this.migrations.push(migration);
+  addVersion(version) {
+    this.versions.push(version);
   }
 
   afterLoad(item) {
@@ -26,15 +26,9 @@ class Repository {
       console.warn('No schema detected for object');
     }
 
-    const currentVersionIndex = this.migrations.findIndex(migration => migration.schema.$id === item.$schema);
-    const newVersions = this.migrations.slice(currentVersionIndex);
-    if ( newVersions.length <= 0 ) {
-      const proxyHandler = new Item();
-      return new Proxy(item, proxyHandler);
-    }
-
+    const currentVersionIndex = this.versions.findIndex(version => version.schema().$id === item.$schema);
     const proxyHandler = new Item({
-      migrations: newVersions
+      versions: this.versions.slice(currentVersionIndex + 1) // + 1 so we don't also get the current version.
     });
 
     return new Proxy(item, proxyHandler);
@@ -53,32 +47,18 @@ class Repository {
       })
   }
 
-  putItem(params) {
-    this.migrate(params.Item);
-
-    return this.client
-      .putItem(params)
-      .promise()
-      .then(response => {
-      })
-  }
-
   query(params) {
     return this.client
       .query(params)
       .promise()
-      .then(response => {
-        return response.Items.map(item => this.migrate(item))
-      })
+      .then(response => response.Items.map(item => this.afterLoad(Converter.unmarshall(item))));
   }
 
   scan(params) {
     return this.client
       .scan(params)
       .promise()
-      .then(response => {
-        return response.Items.map(item => this.migrate(item))
-      })
+      .then(response => response.Items.map(item => this.afterLoad(Converter.unmarshall(item))));
   }
 }
 
@@ -92,30 +72,32 @@ class Item {
     }
   }
 
-  get(oTarget, sKey) {
-    if ( typeof this[sKey] === 'function' ) {
-      return this[sKey].bind(this);
+  get(target, key) {
+    if ( typeof this[key] === 'function' ) {
+      return this[key].bind(this, target);
     }
 
-    if ( typeof oTarget[sKey] === 'function' ) {
-      return oTarget[sKey].bind(oTarget);
+    if ( typeof target[key] === 'function' ) {
+      return target[key].bind(target);
     }
 
-    return oTarget[sKey] || undefined;
+    return target[key] || this[key] || undefined;
   }
 
-  apply(target, that, args) {
-    console.log('arguments', arguments);
-  }
-
-  hasVersions() {
+  canUpgrade() {
     return this.versions.length > 0;
   }
 
-  migrate() {
-    if ( !this.hasVersions() ) {
+  upgrade(target) {
+    if ( !this.canUpgrade() ) {
       return;
     }
+
+    return this.versions.reduce((target, version) => {
+      target = version.up(target);
+      target.$schema = version.schema().$id;
+      return target;
+    }, target);
   }
 }
 
