@@ -1,4 +1,4 @@
-# DynamoDB Schema Versions
+# Tarnation
 
 A schema versioning tool for objects stored in DynamoDB tables to automatically migrate objects as they're read/written to.
 
