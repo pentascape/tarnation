@@ -3,7 +3,8 @@
 const { assert, expect } = require('chai');
 const sinon = require('sinon');
 const faker = require('faker');
-const { Item, Version } = require('../index');
+const { Item } = require('../index');
+
 
 describe('Item', function () {
   it('can be instantiated with no constructor arguments', function () {
@@ -18,9 +19,9 @@ describe('Item', function () {
 
 describe('Item.canUpgrade', function () {
   it('will return true when versions are present', function () {
-    const version = class extends Version {
-      up() {}
-      schema() {}
+    const version = {
+      up: () => ({}),
+      schema: () => ({})
     };
     const item = new Item({versions: [version]});
 
@@ -37,22 +38,17 @@ describe('Item.upgrade', function () {
       first_name: faker.name.firstName(),
       last_name: faker.name.lastName(),
     };
-    const v1 = new (class V1 extends Version {
-      schema() { return {$id: 'foo-v1.json'}; }
-      up(item) {
+    const v1 = {
+      schema: () => ({$id: 'foo-v1.json'}),
+      up: function (item) {
         const {first_name, last_name, ...newItem} = item;
         return { name: {first: first_name, last: last_name}, ...newItem};
       }
-    });
-    const v2 = new (class V2 extends Version {
-      schema() { return {$id: 'foo-v2.json'}; }
-      up(item) {
-        return {
-          ...item,
-          status: 'active',
-        }
-      }
-    });
+    };
+    const v2 = {
+      schema: () => ({$id: 'foo-v2.json'}),
+      up: (item) => ({ ...item, status: 'active' })
+    };
 
     const v1UpSpy = sinon.spy(v1, 'up');
     const v2UpSpy = sinon.spy(v2, 'up');
@@ -70,4 +66,23 @@ describe('Item.upgrade', function () {
 
     assert.deepEqual(upgradeResult, v2Item);
   });
+});
+
+
+describe('Item.set', function () {
+  it('should allow updating of properties on an item', function () {
+    const itemData = {
+      $schema: 'item-v1.json',
+      name: {
+        first: faker.name.firstName(),
+        last: faker.name.lastName(),
+      }
+    };
+    const item = new Proxy(itemData, new Item());
+
+    const newFirstName = faker.name.firstName();
+    item.name.first = newFirstName;
+    item.age = faker.random.number(99);
+    assert.equal(item.name.first, newFirstName);
+  })
 });

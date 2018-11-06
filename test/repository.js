@@ -77,19 +77,20 @@ describe('Repository.afterLoad', function () {
   it('should construct an item with versions it has not yet applied', function () {
     const ddbClient = new DynamoDB();
     const tableName = faker.lorem.word();
-    class V0 extends Version {
-      schema() { return {$id: 'foo-v0.json'}; }
-      up() {}
-    }
-    class V1 extends Version {
-      schema() { return {$id: 'foo-v1.json'}; }
-      up() {}
-    }
-    class V2 extends Version {
-      schema() { return {$id: 'foo-v2.json'}; }
-      up() {}
-    }
-    const versions = [ new V0, new V1, new V2 ];
+    const versions = [
+      {
+        schema: () => ({$id: 'foo-v0.json'}),
+        up: () => {}
+      },
+      {
+        schema: () => ({$id: 'foo-v1.json'}),
+        up: () => {}
+      },
+      {
+        schema: () => ({$id: 'foo-v2.json'}),
+        up: () => {}
+      }
+    ];
     const getItemStub = sinon.stub(ddbClient, 'getItem');
     getItemStub.returns({
       promise: () => Promise.resolve({
@@ -104,8 +105,8 @@ describe('Repository.afterLoad', function () {
     return repository.getItem({})
       .then(item => {
         assert.lengthOf(item.versions, 2);
-        assert.instanceOf(item.versions.shift(), V1);
-        assert.instanceOf(item.versions.shift(), V2);
+        assert.equal(item.versions.shift(), versions[1]);
+        assert.equal(item.versions.shift(), versions[2]);
       });
   });
 });

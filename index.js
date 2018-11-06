@@ -5,19 +5,29 @@ const Converter = DynamoDB.Converter;
 
 class Repository {
   constructor(props) {
-    this.validateProperties(props);
+    Repository.validateProperties(props);
     this.client = props.client;
     this.table = props.table;
-    this.versions = props.versions || [];
+    this.versions = [];
+    (props.versions || []).forEach(version => this.addVersion(version));
   }
 
-  validateProperties(props) {
+  static validateProperties(props) {
     if ( typeof props.table !== 'string' || props.table === '' ) {
       throw new Error('Table should be a non-empty string value');
+    }
+
+    if ( props.hasOwnProperty('versions') ) {
+      if ( !Array.isArray(props.versions) ) {
+        throw new Error(`"versions" should be an array, ${typeof props.versions} given`);
+      }
     }
   }
 
   addVersion(version) {
+    if ( typeof version.up !== 'function' || typeof version.schema !== 'function' ) {
+      throw new Error('Versions require functions "up" and "schema" to be present');
+    }
     this.versions.push(version);
   }
 
@@ -28,7 +38,8 @@ class Repository {
 
     const currentVersionIndex = this.versions.findIndex(version => version.schema().$id === item.$schema);
     const proxyHandler = new Item({
-      versions: this.versions.slice(currentVersionIndex + 1) // + 1 so we don't also get the current version.
+      versions: this.versions.slice(currentVersionIndex + 1), // + 1 so we don't also get the current version.
+      currentVersion: this.versions[currentVersionIndex],
     });
 
     return new Proxy(item, proxyHandler);
@@ -67,8 +78,10 @@ class Item {
   constructor(props) {
     if ( props === undefined ) {
       this.versions = [];
+      this.currentVersion = undefined;
     } else {
       this.versions = props.versions || [];
+      this.currentVersion = props.currentVersion || undefined;
     }
   }
 
@@ -102,25 +115,7 @@ class Item {
 }
 
 
-class Version {
-  constructor() {
-    if ( this.constructor.name === 'Version' ) {
-      throw new Error('Version cannot be instantiated, it must be extended!');
-    }
-
-    if ( typeof this.up !== 'function' ) {
-      throw new Error('Method `up` is not defined');
-    }
-
-    if ( typeof this.schema !== 'function' ) {
-      throw new Error('Method `schema` is not defined')
-    }
-  }
-}
-
-
 module.exports = {
   Repository: Repository,
   Item: Item,
-  Version: Version,
 };
