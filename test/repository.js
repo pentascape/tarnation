@@ -4,23 +4,20 @@ const { assert, expect } = require('chai');
 const sinon = require('sinon');
 const faker = require('faker');
 const { DynamoDB } = require('aws-sdk');
-const { Repository, Version } = require('../index');
+const { Repository } = require('../index');
 
 
 describe('Repository', function () {
   it('should accept an object constructor argument', function () {
     const ddbClient = new DynamoDB();
-    const tableName = faker.lorem.word();
-    const repository = new Repository({client: ddbClient, table: tableName});
+    const repository = new Repository({client: ddbClient});
 
-    assert.equal(repository.table, tableName);
     assert.equal(repository.client, ddbClient);
   });
 
-  it('should throw an error when no table name is provided', function () {
+  it('should throw an error when no client is provided', function () {
     expect(function () {
-      const ddbClient = new DynamoDB();
-      new Repository({client: ddbClient});
+      new Repository({versions: []});
     }).to.throw(Error);
   });
 });
@@ -29,8 +26,7 @@ describe('Repository', function () {
 describe('Repository.getItem', function () {
   it('should raise a warning when a loaded item does not have a $schema property', function () {
     const ddbClient = new DynamoDB();
-    const tableName = faker.lorem.word();
-    const repository = new Repository({client: ddbClient, table: tableName});
+    const repository = new Repository({client: ddbClient});
 
     const consoleWarnSpy = sinon.stub(console, 'warn');
     const getItemStub = sinon.stub(ddbClient, 'getItem');
@@ -52,8 +48,7 @@ describe('Repository.getItem', function () {
 
   it('should return an `Item` object for a retrieved item', function () {
     const ddbClient = new DynamoDB();
-    const tableName = faker.lorem.word();
-    const repository = new Repository({client: ddbClient, table: tableName});
+    const repository = new Repository({client: ddbClient});
 
     const getItemStub = sinon.stub(ddbClient, 'getItem');
     getItemStub.returns({
@@ -76,7 +71,6 @@ describe('Repository.getItem', function () {
 describe('Repository.afterLoad', function () {
   it('should construct an item with versions it has not yet applied', function () {
     const ddbClient = new DynamoDB();
-    const tableName = faker.lorem.word();
     const versions = [
       {
         schema: () => ({$id: 'foo-v0.json'}),
@@ -101,7 +95,7 @@ describe('Repository.afterLoad', function () {
       })
     });
 
-    const repository = new Repository({client: ddbClient, table: tableName, versions: versions});
+    const repository = new Repository({client: ddbClient, versions: versions});
     return repository.getItem({})
       .then(item => {
         assert.lengthOf(item.versions, 2);

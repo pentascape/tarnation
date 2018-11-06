@@ -7,14 +7,13 @@ class Repository {
   constructor(props) {
     Repository.validateProperties(props);
     this.client = props.client;
-    this.table = props.table;
     this.versions = [];
     (props.versions || []).forEach(version => this.addVersion(version));
   }
 
   static validateProperties(props) {
-    if ( typeof props.table !== 'string' || props.table === '' ) {
-      throw new Error('Table should be a non-empty string value');
+    if ( typeof props.client !== 'object' || !props.client instanceof DynamoDB ) {
+      throw new Error(`Repository requires "client" property, "${props.client}" given`);
     }
 
     if ( props.hasOwnProperty('versions') ) {
@@ -55,7 +54,7 @@ class Repository {
         }
 
         return this.afterLoad(Converter.unmarshall(response.Item))
-      })
+      });
   }
 
   query(params) {
