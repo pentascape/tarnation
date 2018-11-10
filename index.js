@@ -5,6 +5,20 @@ const Ajv = require('ajv');
 const ajv = new Ajv();
 const Converter = DynamoDB.Converter;
 
+const versionSchema = {
+  $id: '#/Version',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  properties: {
+    $schema: {
+      type: 'string',
+    },
+  },
+  anyOf: [{
+    $ref: 'http://json-schema.org/draft-07/schema#'
+  }],
+};
+ajv.addSchema(versionSchema);
+
 
 class Repository {
   constructor(props) {
@@ -31,7 +45,7 @@ class Repository {
       throw new Error('Versions require functions "up" and "schema" to be present');
     }
 
-    if ( !ajv.validateSchema(version.schema()) ) {
+    if ( version.schema().$schema !== '#/Version' || !ajv.validateSchema(version.schema()) ) {
       throw new Error('Version has invalid schema');
     }
 
@@ -45,6 +59,11 @@ class Repository {
     }
 
     return ajv.validate(version.schema(), item);
+  }
+
+  create() {
+    const latestVersion = this.versions[this.versions.length - 1];
+    return { ...this._defaultValue(latestVersion.schema()), $schema: latestVersion.schema().$id };
   }
 
   afterLoad(item) {
@@ -86,6 +105,32 @@ class Repository {
       .scan(params)
       .promise()
       .then(response => response.Items.map(item => this.afterLoad(Converter.unmarshall(item))));
+  }
+
+  _defaultValue(property) {
+    if ( property.hasOwnProperty('properties') ) {
+      const object = {};
+      const properties = Object.keys(property.properties);
+      properties.forEach(prop => {
+        const propVal = this._defaultValue(property.properties[prop]);
+        if ( propVal !== undefined ) {
+          object[prop] = propVal;
+        }
+      });
+      return object;
+    }
+
+    if ( property.hasOwnProperty('default') ) {
+      return property.default;
+    }
+
+    if ( property.hasOwnProperty('const') ) {
+      return property.const;
+    }
+
+    if ( property.hasOwnProperty('enum') && property.enum.length === 1 ) {
+      return property.enum[0];
+    }
   }
 }
 

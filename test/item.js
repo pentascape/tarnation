@@ -1,6 +1,6 @@
 'use strict';
 
-const { assert, expect } = require('chai');
+const { assert } = require('chai');
 const sinon = require('sinon');
 const faker = require('faker');
 const { Item } = require('../index');

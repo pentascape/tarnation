@@ -31,8 +31,26 @@ describe('Repository.addVersion', function () {
     expect(function () {
       repository.addVersion({
         schema: () => ({
-          $schema: 'http://json-schema.org/draft-07/schema#',
+          $schema: '#/Version',
           properties: 'foo.json',
+        }),
+        up: () => {}
+      });
+    }).to.throw(Error);
+  });
+
+  it('should throw an error when the defined schema does not include a `$schema` in the `properties` object', function () {
+    const ddbClient = new DynamoDB();
+    const repository = new Repository({client: ddbClient});
+
+    expect(function () {
+      repository.addVersion({
+        schema: () => ({
+          properties: {
+            id: {
+              type: 'string',
+            }
+          },
         }),
         up: () => {}
       });
@@ -91,15 +109,15 @@ describe('Repository.afterLoad', function () {
     const ddbClient = new DynamoDB();
     const versions = [
       {
-        schema: () => ({$id: 'foo-v0.json'}),
+        schema: () => ({$id: 'foo-v0.json', $schema: '#/Version'}),
         up: () => {}
       },
       {
-        schema: () => ({$id: 'foo-v1.json'}),
+        schema: () => ({$id: 'foo-v1.json', $schema: '#/Version'}),
         up: () => {}
       },
       {
-        schema: () => ({$id: 'foo-v2.json'}),
+        schema: () => ({$id: 'foo-v2.json', $schema: '#/Version'}),
         up: () => {}
       }
     ];
@@ -130,6 +148,7 @@ describe('Repository.validate', function () {
         {
           schema: () => ({
             $id: 'foo-v1.json',
+            $schema: '#/Version',
             properties: {
               id: {
                 type: 'string',
@@ -161,6 +180,7 @@ describe('Repository.validate', function () {
         {
           schema: () => ({
             $id: 'foo-v1.json',
+            $schema: '#/Version',
             properties: {
               $schema: {
                 type: 'string',
@@ -192,6 +212,7 @@ describe('Repository.validate', function () {
         {
           schema: () => ({
             $id: 'foo-v1.json',
+            $schema: '#/Version',
             properties: {
               $schema: {
                 type: 'string',
@@ -216,5 +237,43 @@ describe('Repository.validate', function () {
     };
 
     assert.isTrue(repository.validate(object));
+  });
+});
+
+
+describe('Repository.create', function () {
+  it('should create a new object with default properties', function () {
+    const repository = new Repository({client: new DynamoDB(), versions: [
+        {
+          schema: () => ({
+            $id: 'foo-v1.json',
+            $schema: '#/Version',
+            type: 'object',
+            properties: {
+              $schema: {
+                type: 'string',
+                const: 'foo-v1.json',
+              },
+              id: {
+                type: 'string',
+              },
+              country: {
+                type: 'string',
+                default: 'United Kingdom',
+              }
+            },
+            additionalProperties: false,
+          }),
+          up: () => {},
+        }
+      ]});
+
+    const object = repository.create();
+
+    assert.property(object, '$schema');
+    assert.propertyVal(object, '$schema', 'foo-v1.json');
+
+    assert.property(object, 'country');
+    assert.propertyVal(object, 'country', 'United Kingdom');
   });
 });
