@@ -23,6 +23,24 @@ describe('Repository', function () {
 });
 
 
+describe('Repository.addVersion', function () {
+  it('should throw an error when the defined schema is invalid', function () {
+    const ddbClient = new DynamoDB();
+    const repository = new Repository({client: ddbClient});
+
+    expect(function () {
+      repository.addVersion({
+        schema: () => ({
+          $schema: 'http://json-schema.org/draft-07/schema#',
+          properties: 'foo.json',
+        }),
+        up: () => {}
+      });
+    }).to.throw(Error);
+  });
+});
+
+
 describe('Repository.getItem', function () {
   it('should raise a warning when a loaded item does not have a $schema property', function () {
     const ddbClient = new DynamoDB();

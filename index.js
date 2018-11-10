@@ -30,6 +30,11 @@ class Repository {
     if ( typeof version.up !== 'function' || typeof version.schema !== 'function' ) {
       throw new Error('Versions require functions "up" and "schema" to be present');
     }
+
+    if ( !ajv.validateSchema(version.schema()) ) {
+      throw new Error('Version has invalid schema');
+    }
+
     this.versions.push(version);
   }
 
