@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "nyc mocha"
+    "test": "nyc mocha",
+    "watch": "nyc mocha --watch --inspect"
   },
   "author": "Alex",
   "license": "GPL-3.0",
@@ -20,6 +21,6 @@
     "sinon-chai": "^3.2.0"
   },
   "dependencies": {
-    "ajv": "^6.5.4"
+    "ajv": "^6.5.5"
   }
 }

@@ -104,3 +104,99 @@ describe('Repository.afterLoad', function () {
       });
   });
 });
+
+
+describe('Repository.validate', function () {
+  it('should throw an error when the specified item fails validation for it\'s specified schema', function () {
+    const repository = new Repository({client: new DynamoDB(), versions: [
+        {
+          schema: () => ({
+            $id: 'foo-v1.json',
+            properties: {
+              id: {
+                type: 'string',
+              },
+              name: {
+                type: 'string',
+              }
+            },
+            additionalProperties: false,
+          }),
+          up: () => {},
+        }
+      ]});
+
+    const object = {
+      $schema: 'bar-v1.json',
+      id: faker.random.uuid(),
+      email: faker.internet.email(),
+    };
+
+
+    expect(function () {
+      repository.validate(object);
+    }).to.throw(Error);
+  });
+
+  it('should return the boolean false result from `ajv.validate` when the data item is invalid', function () {
+    const repository = new Repository({client: new DynamoDB(), versions: [
+        {
+          schema: () => ({
+            $id: 'foo-v1.json',
+            properties: {
+              $schema: {
+                type: 'string',
+              },
+              id: {
+                type: 'string',
+              },
+              name: {
+                type: 'string',
+              }
+            },
+            additionalProperties: false,
+          }),
+          up: () => {},
+        }
+      ]});
+
+    const object = {
+      $schema: 'foo-v1.json',
+      id: faker.random.uuid(),
+      email: faker.internet.email(),
+    };
+
+    assert.isFalse(repository.validate(object));
+  });
+
+  it('should return the boolean true result from `ajv.validate` when the data item is invalid', function () {
+    const repository = new Repository({client: new DynamoDB(), versions: [
+        {
+          schema: () => ({
+            $id: 'foo-v1.json',
+            properties: {
+              $schema: {
+                type: 'string',
+              },
+              id: {
+                type: 'string',
+              },
+              name: {
+                type: 'string',
+              }
+            },
+            additionalProperties: false,
+          }),
+          up: () => {},
+        }
+      ]});
+
+    const object = {
+      $schema: 'foo-v1.json',
+      id: faker.random.uuid(),
+      name: faker.name.firstName(),
+    };
+
+    assert.isTrue(repository.validate(object));
+  });
+});

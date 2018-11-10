@@ -1,5 +1,8 @@
 'use strict';
 const { DynamoDB } = require('aws-sdk');
+const Ajv = require('ajv');
+
+const ajv = new Ajv();
 const Converter = DynamoDB.Converter;
 
 
@@ -28,6 +31,15 @@ class Repository {
       throw new Error('Versions require functions "up" and "schema" to be present');
     }
     this.versions.push(version);
+  }
+
+  validate(item) {
+    const version = this.versions.find(version => version.schema().$id === item.$schema);
+    if ( !version ) {
+      throw new Error();
+    }
+
+    return ajv.validate(version.schema(), item);
   }
 
   afterLoad(item) {

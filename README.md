@@ -12,7 +12,7 @@ ssh-add ~/.ssh/id_rsa
 ```
 
 ```console
-npm install --save git+ssh://github.com:pentascape/dynamodb-schema-versions.git
+npm install --save git+ssh://github.com:pentascape/tarnation.git
 ```
 
 
