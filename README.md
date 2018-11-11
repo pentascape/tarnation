@@ -1,5 +1,7 @@
 # Tarnation
 
+[![Build Status](https://travis-ci.org/pentascape/tarnation.svg?branch=master)](https://travis-ci.org/pentascape/tarnation)
+
 A schema versioning tool for objects stored in DynamoDB tables to automatically migrate objects as they're read/written to.
 
 
