@@ -97,14 +97,20 @@ class Repository {
     return this.client
       .query(params)
       .promise()
-      .then(response => response.Items.map(item => this.afterLoad(Converter.unmarshall(item))));
+      .then(response => ({
+        ...response,
+        Items: response.Items.map(item => this.afterLoad(Converter.unmarshall(item)))
+      }));
   }
 
   scan(params) {
     return this.client
       .scan(params)
       .promise()
-      .then(response => response.Items.map(item => this.afterLoad(Converter.unmarshall(item))));
+      .then(response => ({
+        ...response,
+        Items: response.Items.map(item => this.afterLoad(Converter.unmarshall(item)))
+      }));
   }
 
   _defaultValue(property) {
