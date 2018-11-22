@@ -4,7 +4,7 @@ const { assert, expect } = require('chai');
 const sinon = require('sinon');
 const faker = require('faker');
 const { DynamoDB } = require('aws-sdk');
-const { Repository } = require('../index');
+const { Repository, ValidationError } = require('../index');
 
 
 describe('Repository', function () {
@@ -175,11 +175,11 @@ describe('Repository.validate', function () {
     }).to.throw(Error);
   });
 
-  it('should return the boolean false result from `ajv.validate` when the data item is invalid', function () {
+  it('should throw a `ValidationError` when the data item is invalid', function () {
     const repository = new Repository({client: new DynamoDB(), versions: [
         {
           schema: () => ({
-            $id: 'foo-v1.json',
+            $id: 'bar-v1.json',
             $schema: '#/Version',
             properties: {
               $schema: {
@@ -199,19 +199,21 @@ describe('Repository.validate', function () {
       ]});
 
     const object = {
-      $schema: 'foo-v1.json',
+      $schema: 'bar-v1.json',
       id: faker.random.uuid(),
       email: faker.internet.email(),
     };
 
-    assert.isFalse(repository.validate(object));
+    expect(function () {
+      repository.validate(object);
+    }).to.throw(ValidationError);
   });
 
-  it('should return the boolean true result from `ajv.validate` when the data item is invalid', function () {
+  it('should return the input object when the data item is valid', function () {
     const repository = new Repository({client: new DynamoDB(), versions: [
         {
           schema: () => ({
-            $id: 'foo-v1.json',
+            $id: 'bar-v1.json',
             $schema: '#/Version',
             properties: {
               $schema: {
@@ -231,12 +233,12 @@ describe('Repository.validate', function () {
       ]});
 
     const object = {
-      $schema: 'foo-v1.json',
+      $schema: 'bar-v1.json',
       id: faker.random.uuid(),
       name: faker.name.firstName(),
     };
 
-    assert.isTrue(repository.validate(object));
+    assert.equal(object, repository.validate(object));
   });
 });
 

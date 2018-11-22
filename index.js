@@ -20,6 +20,14 @@ const versionSchema = {
 ajv.addSchema(versionSchema);
 
 
+class ValidationError extends Error {
+  constructor(errorsText, errors) {
+    super(errorsText);
+    this.errors = errors;
+  }
+}
+
+
 class Repository {
   constructor(props) {
     Repository.validateProperties(props);
@@ -28,7 +36,7 @@ class Repository {
     (props.versions || []).forEach(version => this.addVersion(version));
   }
 
-  static validateProperties(props) {
+  static validateProperties(props)  {
     if ( typeof props.client !== 'object' || !props.client instanceof DynamoDB ) {
       throw new Error(`Repository requires "client" property, "${props.client}" given`);
     }
@@ -55,10 +63,14 @@ class Repository {
   validate(item) {
     const version = this.versions.find(version => version.schema().$id === item.$schema);
     if ( !version ) {
-      throw new Error();
+      throw new Error('No version applied');
     }
 
-    return ajv.validate(version.schema(), item);
+    if ( !ajv.validate(version.schema(), item) ) {
+      throw new ValidationError(ajv.errorsText(), ajv.errors);
+    }
+
+    return item;
   }
 
   create() {
@@ -176,6 +188,9 @@ class Item {
     return this.versions.reduce((target, version) => {
       target = version.up(target);
       target.$schema = version.schema().$id;
+      if ( !ajv.validate(version.schema(), target) ) {
+        throw new Error('');
+      }
       return target;
     }, target);
   }
@@ -183,6 +198,7 @@ class Item {
 
 
 module.exports = {
+  ValidationError: ValidationError,
   Repository: Repository,
   Item: Item,
 };
