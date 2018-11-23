@@ -126,7 +126,7 @@ describe('Repository.scan', function () {
         assert.instanceOf(response.Items, Array);
         assert.instanceOf(response.Items[0], Object);
       });
-  })
+  });
 });
 
 

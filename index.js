@@ -79,6 +79,9 @@ class Repository {
   }
 
   afterLoad(item) {
+    if ( this.client instanceof DynamoDB ) {
+      item = Converter.unmarshall(item);
+    }
     if ( !item.hasOwnProperty('$schema') || typeof item.$schema !== 'string' || item.$schema === '' ) {
       console.warn('No schema detected for object');
     }
@@ -101,7 +104,7 @@ class Repository {
           return null;
         }
 
-        return this.afterLoad(Converter.unmarshall(response.Item))
+        return this.afterLoad(response.Item)
       });
   }
 
@@ -111,7 +114,7 @@ class Repository {
       .promise()
       .then(response => ({
         ...response,
-        Items: response.Items.map(item => this.afterLoad(Converter.unmarshall(item)))
+        Items: response.Items.map(item => this.afterLoad(item))
       }));
   }
 
@@ -121,7 +124,7 @@ class Repository {
       .promise()
       .then(response => ({
         ...response,
-        Items: response.Items.map(item => this.afterLoad(Converter.unmarshall(item)))
+        Items: response.Items.map(item => this.afterLoad(item))
       }));
   }
 
