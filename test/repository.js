@@ -104,6 +104,32 @@ describe('Repository.getItem', function () {
 });
 
 
+describe('Repository.scan', function () {
+  it('should return the original response object substituting Items for proxies', function () {
+    const ddbClient = new DynamoDB();
+    const repository = new Repository({client: ddbClient});
+
+    const scanStub = sinon.stub(ddbClient, 'scan');
+    scanStub.returns({
+      promise: () => Promise.resolve({
+        Items: [
+          DynamoDB.Converter.marshall({
+            $schema: faker.system.commonFileName('json'),
+            id: faker.random.uuid()
+          })
+        ]
+      })
+    });
+
+    return repository.scan({})
+      .then(response => {
+        assert.instanceOf(response.Items, Array);
+        assert.instanceOf(response.Items[0], Object);
+      });
+  })
+});
+
+
 describe('Repository.afterLoad', function () {
   it('should construct an item with versions it has not yet applied', function () {
     const ddbClient = new DynamoDB();

@@ -182,14 +182,14 @@ class Item {
 
   upgrade(target) {
     if ( !this.canUpgrade() ) {
-      return;
+      return target;
     }
 
     return this.versions.reduce((target, version) => {
       target = version.up(target);
       target.$schema = version.schema().$id;
       if ( !ajv.validate(version.schema(), target) ) {
-        throw new Error('');
+        throw new Error(ajv.errorsText());
       }
       return target;
     }, target);

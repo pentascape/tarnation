@@ -69,6 +69,22 @@ describe('Item.upgrade', function () {
 });
 
 
+describe('Item.get', function () {
+  it('should allow retrieval of properties from an item', function () {
+    const itemData = {
+      $schema: 'item-v1.json',
+      name: {
+        first: faker.name.firstName(),
+        last: faker.name.lastName(),
+      }
+    };
+    const item = new Proxy(itemData, new Item());
+
+    assert.equal(item.name, itemData.name);
+  });
+});
+
+
 describe('Item.set', function () {
   it('should allow updating of properties on an item', function () {
     const itemData = {
