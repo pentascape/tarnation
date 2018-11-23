@@ -176,6 +176,10 @@ class Item {
     return target[key] || this[key] || undefined;
   }
 
+  hasOwnProperty(target, key) {
+    return target.hasOwnProperty(key);
+  }
+
   canUpgrade() {
     return this.versions.length > 0;
   }

@@ -85,6 +85,22 @@ describe('Item.get', function () {
 });
 
 
+describe('Item.hasOwnProperty', function () {
+  it('should return true when an item has a property', function () {
+    const itemData = {
+      $schema: 'item-v1.json',
+      name: {
+        first: faker.name.firstName(),
+        last: faker.name.lastName(),
+      }
+    };
+    const item = new Proxy(itemData, new Item());
+
+    assert.isTrue(item.hasOwnProperty('$schema'));
+  });
+});
+
+
 describe('Item.set', function () {
   it('should allow updating of properties on an item', function () {
     const itemData = {
